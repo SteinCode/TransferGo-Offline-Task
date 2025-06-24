@@ -15,16 +15,16 @@ services:
       FRANKENPHP_WORKER_CONFIG: watch
       MERCURE_EXTRA_DIRECTIVES: demo
       # See https://xdebug.org/docs/all_settings#mode
-      XDEBUG_MODE: "${XDEBUG_MODE:-off}"
+      XDEBUG_MODE: "${XDEBUG_MODE:-debug}"
       APP_ENV: "${APP_ENV:-dev}"
     extra_hosts:
       # Ensure that host.docker.internal is correctly defined on Linux
       - host.docker.internal:host-gateway
     tty: true
-###> symfony/mercure-bundle ###
-###< symfony/mercure-bundle ###
+  ###> symfony/mercure-bundle ###
+  ###< symfony/mercure-bundle ###
 
-###> symfony/mailer ###
+  ###> symfony/mailer ###
   mailer:
     image: axllent/mailpit
     ports:

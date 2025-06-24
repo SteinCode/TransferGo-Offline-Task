@@ -18,11 +18,10 @@ class NotificationController extends AbstractController
         $this->bus = $bus;
     }
 
-    /**
-     * @Route("/test-email", name="test_email")
-     */
+    #[Route("/test-email", name: "test_email")]
     public function testEmail(Request $request): Response
     {
+
         $to = $request->query->get('to', 'b4lbo123@gmail.com');
 
         $message = new NotificationMessage(
@@ -34,6 +33,7 @@ class NotificationController extends AbstractController
             subject: 'First SES test',
             body: '<p>This email was sent via AWS SES from Symfony</p>'
         );
+
         try {
             $this->bus->dispatch($message);
         } catch (TransportExceptionInterface $e) {

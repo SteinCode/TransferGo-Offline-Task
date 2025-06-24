@@ -57,7 +57,7 @@ CMD [ "frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile" ]
 FROM frankenphp_base AS frankenphp_dev
 
 ENV APP_ENV=dev
-ENV XDEBUG_MODE=off
+ENV XDEBUG_MODE=debug
 ENV FRANKENPHP_WORKER_CONFIG=watch
 
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"

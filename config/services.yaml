@@ -18,8 +18,13 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
     App\Service\Provider\SesNotifier:
         arguments:
             $from: "%env(EMAIL_FROM)%"
         tags:
             - { name: "app.notifier.provider" }
+
+    App\Service\NotificationService:
+        arguments:
+            $providers: !tagged_iterator app.notifier.provider

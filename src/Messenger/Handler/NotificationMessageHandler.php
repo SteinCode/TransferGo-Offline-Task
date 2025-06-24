@@ -4,8 +4,9 @@ namespace App\Messenger\Handler;
 
 use App\Messenger\NotificationMessage;
 use App\Service\NotificationService;
-use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
+#[AsMessageHandler]
 class NotificationMessageHandler
 {
     public function __construct(private NotificationService $service)
