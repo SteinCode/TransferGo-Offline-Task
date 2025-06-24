@@ -1,0 +1,10 @@
+# notification:
+#     channels: # enable/disable channels
+#         email: true
+#         sms: true
+#     providers:
+#         email:
+#             - ses
+#         sms:
+#             - twilio
+#     failover: true
