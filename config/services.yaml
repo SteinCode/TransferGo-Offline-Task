@@ -19,12 +19,23 @@ services:
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
+    App\Service\NotificationService:
+        arguments:
+            $providers: !tagged_iterator app.notifier.provider
+
     App\Service\Provider\SesNotifier:
         arguments:
             $from: "%env(EMAIL_FROM)%"
         tags:
             - { name: "app.notifier.provider" }
 
-    App\Service\NotificationService:
+    Twilio\Rest\Client:
+        factory: ['Twilio\\Rest\\Client', "create"]
+
+    App\Service\Provider\TwilioNotifier:
         arguments:
-            $providers: !tagged_iterator app.notifier.provider
+            $twilio: "@twilio.client"
+            $from: "%env(TWILIO_FROM)%"
+            $logger: "@logger"
+        tags:
+            - { name: "app.notifier.provider" }
