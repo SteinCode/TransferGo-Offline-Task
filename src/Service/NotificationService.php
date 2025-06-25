@@ -5,14 +5,17 @@ namespace App\Service;
 use App\Messenger\NotificationMessage;
 use App\Service\Provider\NotifierInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 class NotificationService
 {
-    private LoggerInterface $logger;
-
     /** @var iterable<NotifierInterface> */
-    public function __construct(private iterable $providers, LoggerInterface $logger)
-    {
+    public function __construct(
+        private iterable $providers,
+        private LoggerInterface $logger,
+        #[Autowire('%monolog.logger.notification%')]
+        private LoggerInterface $notifierLogger
+    ) {
         $this->logger = $logger;
     }
 
@@ -30,10 +33,13 @@ class NotificationService
 
                 try {
                     $provider->send($msg);
-                    $this->logger->info(
-                        "Notification sent via " . get_class($provider),
-                        ['channel' => $channel]
-                    );
+                    $this->notifierLogger->info('notification.audit', [
+                        'user_id' => $msg->getUserId(),
+                        'channel' => $channel,
+                        'recipient' => $msg->getTo()[$channel] ?? null,
+                        // Monolog already stamps the date/time; you can omit the next line if you like:
+                        'sent_at' => (new \DateTimeImmutable())->format(\DateTime::ATOM),
+                    ]);
                     $sent = true;
                     // (don’t return—keep going so we try all channels)
                 } catch (\Throwable $e) {

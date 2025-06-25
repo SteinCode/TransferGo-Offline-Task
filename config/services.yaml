@@ -22,6 +22,8 @@ services:
     App\Service\NotificationService:
         arguments:
             $providers: !tagged_iterator app.notifier.provider
+            $logger: "@logger"
+            $notifierLogger: "@monolog.logger.notification"
 
     App\Service\Provider\SesNotifier:
         arguments:

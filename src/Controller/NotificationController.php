@@ -49,6 +49,9 @@ class NotificationController extends AbstractController
         try {
             $this->bus->dispatch($message);
         } catch (\Throwable $e) {
+            $this->logger->error('notification dispatch via multi-channel endpoint failed', [
+                'exception' => $e->getMessage(),
+            ]);
             return new Response(
                 'Failed to send notification: ' . $e->getMessage(),
                 Response::HTTP_INTERNAL_SERVER_ERROR
@@ -76,8 +79,14 @@ class NotificationController extends AbstractController
 
         try {
             $this->bus->dispatch($message);
-        } catch (TransportExceptionInterface $e) {
-            return new Response('Failed to send email: ' . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (\Throwable $e) {
+            $this->logger->error('email dispatch failed', [
+                'exception' => $e->getMessage(),
+            ]);
+            return new Response(
+                'Failed to send email: ' . $e->getMessage(),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
 
         return new Response("Email sent to: $toEmail");

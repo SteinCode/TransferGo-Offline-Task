@@ -1,6 +1,5 @@
 monolog:
-    channels:
-        - deprecation # Deprecations are logged in the dedicated "deprecation" channel when it exists
+    channels: ["deprecation", "notification"]
 
 when@dev:
     monolog:
@@ -12,9 +11,9 @@ when@dev:
                 channels: ["!event"]
             # uncomment to get logging in your browser
             # you may have to allow bigger header sizes in your Web server configuration
-            #firephp:
-            #    type: firephp
-            #    level: info
+            firephp:
+                type: firephp
+                level: info
             #chromephp:
             #    type: chromephp
             #    level: info
@@ -22,6 +21,11 @@ when@dev:
                 type: console
                 process_psr_3_messages: false
                 channels: ["!event", "!doctrine", "!console"]
+            notification:
+                type: stream
+                path: "%kernel.logs_dir%/dev_notifications.log"
+                level: info
+                channels: ["notification"]
 
 when@test:
     monolog:
