@@ -10,8 +10,6 @@
         "ext-ctype": "*",
         "ext-iconv": "*",
         "aws/aws-sdk-php": "^3.347",
-        "doctrine/doctrine-bundle": "^2.15",
-        "doctrine/doctrine-migrations-bundle": "^3.4",
         "doctrine/orm": "^3.4",
         "runtime/frankenphp-symfony": "^0.2.0",
         "symfony/amazon-mailer": "7.3.*",
@@ -79,6 +77,9 @@
         "refresh-container": [
             "docker compose down --remove-orphans",
             "docker compose up --wait"
+        ],
+        "test": [
+            "php -d memory_limit=-1 vendor/bin/phpunit --testdox --colors=always"
         ]
     },
     "conflict": {
@@ -90,5 +91,8 @@
             "require": "7.3.*",
             "docker": true
         }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "*"
     }
 }

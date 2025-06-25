@@ -1,22 +1,23 @@
-framework:
-    messenger:
-        default_bus: messenger.bus.default
+# framework:
+#     messenger:
+#         transports:
+#             async_notifications:
+#                 dsn: "%env(MESSENGER_TRANSPORT_DSN)%"
+#                 retry_strategy:
+#                     max_retries: 5 # total attempts = 1 initial + 5 retries
+#                     delay: 60000 # 60 000 ms = wait 1 min before 1st retry
+#                     multiplier: 2 # next wait is 2 min, then 4 min…
+#                     max_delay: 300000 # cap at 5 min between retries
 
-        # define your transports
-        transports:
-            async_notifications:
-                dsn: "%env(MESSENGER_TRANSPORT_DSN)%"
-                retry_strategy:
-                    max_retries: 0 # first try only
-            failed_notifications:
-                dsn: "doctrine://default?queue_name=failed_notifications"
-                retry_strategy:
-                    max_retries: 5 # 5 retries
-                    delay: 10000 # 10 sec
-                    multiplier: 2
-                    max_delay: 60000 # 1 m
+#             failed_notifications:
+#                 dsn: "doctrine://default?queue_name=failed_notifications"
+#                 retry_strategy:
+#                     max_retries: 3
+#                     delay: 10000
+#                     multiplier: 2
+#                     max_delay: 60000
 
-        routing:
-            'App\Messenger\NotificationMessage': async_notifications
+#         routing:
+#             'App\Messenger\NotificationMessage': async_notifications
 
-        failure_transport: failed_notifications
+#         failure_transport: failed_notifications

@@ -21,6 +21,8 @@ class NotificationService
         $lastException = null;
 
         foreach ($msg->getChannels() as $channel) {
+            $sent = false;
+
             foreach ($this->providers as $provider) {
                 if (!$provider->supports($channel)) {
                     continue;
@@ -28,20 +30,31 @@ class NotificationService
 
                 try {
                     $provider->send($msg);
-                    return;
+                    $this->logger->info(
+                        "Notification sent via " . get_class($provider),
+                        ['channel' => $channel]
+                    );
+                    $sent = true;
+                    // (don’t return—keep going so we try all channels)
                 } catch (\Throwable $e) {
                     $this->logger->error('Notifier failed', [
                         'channel' => $channel,
-                        'exception' => $e->getMessage(),
+                        'provider' => get_class($provider),
+                        'error' => $e->getMessage(),
                     ]);
                     $lastException = $e;
                 }
             }
-        }
 
-        if ($lastException) {
-            // re-throw so your controller can catch it
-            throw $lastException;
+            // --- failure check per‐channel, now inside the loop so $channel & $sent exist ---
+            if (!$sent) {
+                throw new \Exception(
+                    "All providers failed for channel \"$channel\", will retry later",
+                    0,
+                    $lastException
+                );
+            }
         }
     }
+
 }

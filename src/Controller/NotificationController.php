@@ -21,6 +21,44 @@ class NotificationController extends AbstractController
         $this->logger = $logger;
     }
 
+    #[Route('/test-notification', name: 'test_notification', methods: ['GET'])]
+    public function testNotification(Request $request): Response
+    {
+        $channelsParam = $request->query->get('channels', 'email');
+        $channels = explode(',', $channelsParam);
+
+        $to = [];
+        foreach ($channels as $ch) {
+            $paramKey = $ch === 'email' ? 'toEmail' : 'toSms';
+            if ($value = $request->query->get($paramKey)) {
+                // for email: expect full address; for sms: expect phone number
+                $to[$ch] = $value;
+            }
+        }
+
+        $message = new NotificationMessage(
+            userId: 'demo-user',
+            channels: $channels,
+            to: $to,
+            template: 'TEST_NOTIFICATION',
+            data: [],
+            subject: $request->query->get('subject', 'Hello!'),
+            body: $request->query->get('body', '<p>This is a multi-channel test.</p>')
+        );
+
+        try {
+            $this->bus->dispatch($message);
+        } catch (\Throwable $e) {
+            return new Response(
+                'Failed to send notification: ' . $e->getMessage(),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+
+        return new Response('Sent via: ' . implode(', ', $channels));
+    }
+
+
     #[Route("/test-email", name: "test_email", methods: ["GET"])]
     public function testEmail(Request $request): Response
     {
@@ -32,8 +70,8 @@ class NotificationController extends AbstractController
             to: ['email' => $toEmail],
             template: 'TEST_EMAIL',
             data: [],
-            subject: '',
-            body: '<p>This email was sent via AWS SES from Symfony</p>'
+            subject: 'Just testing',
+            body: 'Test email'
         );
 
         try {
