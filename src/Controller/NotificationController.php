@@ -6,8 +6,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
-use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Routing\Annotation\Route;
 
 class NotificationController extends AbstractController
 {
@@ -18,10 +18,9 @@ class NotificationController extends AbstractController
         $this->bus = $bus;
     }
 
-    #[Route("/test-email", name: "test_email")]
+    #[Route("/test-email", name: "test_email", methods: ["GET"])]
     public function testEmail(Request $request): Response
     {
-
         $to = $request->query->get('to', 'b4lbo123@gmail.com');
 
         $message = new NotificationMessage(
