@@ -4,28 +4,44 @@ namespace App\Service;
 
 use App\Messenger\NotificationMessage;
 use App\Service\Provider\NotifierInterface;
+use Psr\Log\LoggerInterface;
 
 class NotificationService
 {
+    private LoggerInterface $logger;
+
     /** @var iterable<NotifierInterface> */
-    public function __construct(private iterable $providers)
+    public function __construct(private iterable $providers, LoggerInterface $logger)
     {
+        $this->logger = $logger;
     }
 
     public function notify(NotificationMessage $msg): void
     {
+        $lastException = null;
+
         foreach ($msg->getChannels() as $channel) {
-            foreach ($this->providers as $p) {
-                if (!$p->supports($channel)) {
+            foreach ($this->providers as $provider) {
+                if (!$provider->supports($channel)) {
                     continue;
                 }
+
                 try {
-                    $p->send($msg);
-                    break;
+                    $provider->send($msg);
+                    return;
                 } catch (\Throwable $e) {
-                    // will log a problem and try another provider
+                    $this->logger->error('Notifier failed', [
+                        'channel' => $channel,
+                        'exception' => $e->getMessage(),
+                    ]);
+                    $lastException = $e;
                 }
             }
+        }
+
+        if ($lastException) {
+            // re-throw so your controller can catch it
+            throw $lastException;
         }
     }
 }

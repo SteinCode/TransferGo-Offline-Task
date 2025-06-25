@@ -30,15 +30,15 @@ services:
             - { name: "app.notifier.provider" }
 
     Twilio\Rest\Client:
-        factory: ['\\Twilio\\Rest\\Client', "create"]
         arguments:
             - "%env(TWILIO_SID)%"
             - "%env(TWILIO_AUTH_TOKEN)%"
         public: false
 
+    # Your notifier that takes that client as an argument
     App\Service\Provider\TwilioNotifier:
         arguments:
-            $twilio: "@twilio.client"
+            $twilioClient: '@Twilio\Rest\Client'
             $from: "%env(TWILIO_FROM)%"
             $logger: "@logger"
         tags:

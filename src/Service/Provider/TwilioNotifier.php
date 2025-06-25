@@ -5,17 +5,18 @@ namespace App\Service\Provider;
 use App\Messenger\NotificationMessage;
 use Twilio\Rest\Client;
 use Psr\Log\LoggerInterface;
+use Twilio\Exceptions\RestException;
 
 class TwilioNotifier implements NotifierInterface
 {
     private Client $twilioClient;
-    private string $form;
+    private string $from;
     private LoggerInterface $logger;
 
-    public function __construct(Client $twilioClient, string $form, LoggerInterface $logger)
+    public function __construct(Client $twilioClient, string $from, LoggerInterface $logger)
     {
         $this->twilioClient = $twilioClient;
-        $this->form = $form;
+        $this->from = $from;
         $this->logger = $logger;
     }
 
@@ -34,18 +35,25 @@ class TwilioNotifier implements NotifierInterface
         }
 
         try {
-            $this->twilioClient->messages->create(
-                $to,
-                [
-                    'from' => $this->form,
-                    'body' => $body,
-                ]
-            );
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to send SMS', [
-                'to' => $to,
+            $sms = $this->twilioClient->messages->create($to, [
+                'from' => $this->from,
                 'body' => $body,
-                'exception' => $e,
+            ]);
+            $this->logger->info('Twilio SMS sent', [
+                'to' => $to,
+                'sid' => $sms->sid,
+                'status' => $sms->status,
+            ]);
+        } catch (RestException $e) {
+            $this->logger->error('Twilio REST error', [
+                'code' => $e->getCode(),
+                'message' => $e->getMessage(),
+                'httpCode' => $e->getStatusCode(),
+            ]);
+            throw $e;
+        } catch (\Throwable $e) {
+            $this->logger->error('Twilio SMS failed', [
+                'exception' => $e->getMessage(),
             ]);
             throw $e;
         }
