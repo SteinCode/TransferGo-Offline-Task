@@ -32,7 +32,7 @@ class NotificationController extends AbstractController
             to: ['email' => $toEmail],
             template: 'TEST_EMAIL',
             data: [],
-            subject: 'First SES test',
+            subject: '',
             body: '<p>This email was sent via AWS SES from Symfony</p>'
         );
 
@@ -56,7 +56,7 @@ class NotificationController extends AbstractController
             data: [],
             template: 'TEST_SMS',
             subject: "",
-            body: 'Labuka, čia Austėja, rašau iš angliško numerio. Norėjau pranešti, kad būsiu tavo gimšoj.'
+            body: 'Hello hello, how are you?'
         );
         try {
             $this->bus->dispatch($message);

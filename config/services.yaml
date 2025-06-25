@@ -42,4 +42,20 @@ services:
             $from: "%env(TWILIO_FROM)%"
             $logger: "@logger"
         tags:
-            - { name: "app.notifier.provider" }
+            - { name: "app.notifier.provider", priority: 100 }
+
+    Aws\Sns\SnsClient:
+        arguments:
+            - version: "2010-03-31"
+              region: "%env(AWS_SNS_REGION)%"
+              credentials:
+                  key: "%env(AWS_SNS_KEY)%"
+                  secret: "%env(AWS_SNS_SECRET)%"
+        public: false
+
+    App\Service\Provider\SnsNotifier:
+        arguments:
+            $snsClient: '@Aws\Sns\SnsClient'
+            $logger: "@logger"
+        tags:
+            - { name: "app.notifier.provider", priority: 80 }

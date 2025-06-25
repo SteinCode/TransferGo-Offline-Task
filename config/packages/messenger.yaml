@@ -1,13 +1,22 @@
 framework:
     messenger:
+        default_bus: messenger.bus.default
+
+        # define your transports
         transports:
-            sync: "sync://"
+            async_notifications:
+                dsn: "%env(MESSENGER_TRANSPORT_DSN)%"
+                retry_strategy:
+                    max_retries: 0 # first try only
+            failed_notifications:
+                dsn: "doctrine://default?queue_name=failed_notifications"
+                retry_strategy:
+                    max_retries: 5 # 5 retries
+                    delay: 10000 # 10 sec
+                    multiplier: 2
+                    max_delay: 60000 # 1 m
+
         routing:
-            'App\Messenger\NotificationMessage': sync
-# when@test:
-#    framework:
-#        messenger:
-#            transports:
-#                # replace with your transport name here (e.g., my_transport: 'in-memory://')
-#                # For more Messenger testing tools, see https://github.com/zenstruck/messenger-test
-#                async: 'in-memory://'
+            'App\Messenger\NotificationMessage': async_notifications
+
+        failure_transport: failed_notifications

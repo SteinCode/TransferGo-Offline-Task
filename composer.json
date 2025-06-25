@@ -9,9 +9,14 @@
         "php": ">=8.4.8",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "aws/aws-sdk-php": "^3.347",
+        "doctrine/doctrine-bundle": "^2.15",
+        "doctrine/doctrine-migrations-bundle": "^3.4",
+        "doctrine/orm": "^3.4",
         "runtime/frankenphp-symfony": "^0.2.0",
         "symfony/amazon-mailer": "7.3.*",
         "symfony/console": "7.3.*",
+        "symfony/doctrine-messenger": "7.3.*",
         "symfony/dotenv": "7.3.*",
         "symfony/flex": "^2",
         "symfony/framework-bundle": "7.3.*",
@@ -65,6 +70,15 @@
         ],
         "post-update-cmd": [
             "@auto-scripts"
+        ],
+        "refresh-env": [
+            "php -r \"@unlink('.env.local.php');\"",
+            "composer dump-env dev",
+            "php bin/console cache:clear"
+        ],
+        "refresh-container": [
+            "docker compose down --remove-orphans",
+            "docker compose up --wait"
         ]
     },
     "conflict": {
