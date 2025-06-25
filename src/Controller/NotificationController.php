@@ -41,4 +41,6 @@ class NotificationController extends AbstractController
 
         return new Response("Email sent to: $to");
     }
+
+
 }

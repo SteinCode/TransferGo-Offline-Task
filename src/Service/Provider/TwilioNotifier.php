@@ -33,8 +33,21 @@ class TwilioNotifier implements NotifierInterface
             throw new \InvalidArgumentException('No SMS recipient defined');
         }
 
-
+        try {
+            $this->twilioClient->messages->create(
+                $to,
+                [
+                    'from' => $this->form,
+                    'body' => $body,
+                ]
+            );
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to send SMS', [
+                'to' => $to,
+                'body' => $body,
+                'exception' => $e,
+            ]);
+            throw $e;
+        }
     }
-
-
 }
