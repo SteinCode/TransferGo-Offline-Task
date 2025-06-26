@@ -77,14 +77,14 @@ class NotificationController extends AbstractController
                     }
                     break;
                 case 'sms':
-                    // In HTTP query strings, '+' is decoded as space, so re-encode and trim
-                    $smsRaw = $request->query->get('toSms');
-                    $sms = str_replace(' ', '+', trim((string) $smsRaw));
-                    if ($sms && preg_match('/^\+?[1-9]\d{1,14}$/', $sms)) {
-                        $to['sms'] = $sms;
-                    } else {
+                    $smsRaw = (string) $request->query->get('toSms', '');
+                    $digits = preg_replace('/\D+/', '', $smsRaw);
+                    $sms = '+' . $digits;
+
+                    if (!preg_match('/^\+[1-9]\d{1,14}$/', $sms)) {
                         return new Response('Invalid or missing SMS number.', Response::HTTP_BAD_REQUEST);
                     }
+                    $to['sms'] = $sms;
                     break;
             }
         }
@@ -172,11 +172,12 @@ class NotificationController extends AbstractController
     #[Route("/send-sms", "send_sms", methods: ['GET'])]
     public function sendSms(Request $request): Response
     {
-        $smsRaw = $request->query->get('to', '+37060635443');
-        $sms = str_replace(' ', '+', trim((string) $smsRaw));
+        $smsRaw = (string) $request->query->get('toSms', '');
+        $digits = preg_replace('/\D+/', '', $smsRaw);
+        $sms = '+' . $digits;
 
-        if (!preg_match('/^\+?[1-9]\d{1,14}$/', $sms)) {
-            return new Response('Invalid SMS number.', Response::HTTP_BAD_REQUEST);
+        if (!preg_match('/^\+[1-9]\d{1,14}$/', $sms)) {
+            return new Response('Invalid or missing SMS number.', Response::HTTP_BAD_REQUEST);
         }
 
         $message = new NotificationMessage(

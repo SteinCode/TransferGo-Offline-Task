@@ -4,23 +4,25 @@ This simple project was made using [Dunglas Symfony Template](https://github.com
 
 ## Initial set up
 
-0. When you will be testing this project, we assume that you have [Docker](https://www.docker.com/), [Docker Compose](https://docs.docker.com/compose/), PHP and Composer installed on your machine.
-1. First, run `docker-compose up --wait`.
+1. Run `docker compose build --pull --no-cache` to build fresh images.
+2. Run `docker compose up --wait` to set up.
+3. We recommend using Postman or other similar app or web to run requests.
+
+## Endpoints
+
+### `GET test-notifications` - main endpoint for sending both: SMS and emails.
 
 ## Working with env variables
 
-In this project I used `.env.dev` file for managing all the environment variables.
+To sync env variables with the running container run custom composer command:
+
+`composer refresh-env`
 
 ## Capabilities
 
 -   Can send sms via two different channels (providers), if one of the channels is down, another will be used.
 -   Can send an email via one channel.
--   Logs
--   ...
-
-## Endpoints
-
-### `GET test-notifications` - main endpoint for sending both: SMS and emails.
+-   Logs usage tracking to dev_notifications.log.
 
 ## Tools used
 

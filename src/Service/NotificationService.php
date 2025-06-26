@@ -40,7 +40,6 @@ class NotificationService
                         'user_id' => $msg->getUserId(),
                         'channel' => $channel,
                         'recipient' => $msg->getTo()[$channel] ?? null,
-                        // Monolog already stamps the date/time; you can omit the next line if you like:
                         'sent_at' => (new \DateTimeImmutable())->format(\DateTime::ATOM),
                     ]);
                     $sent = true;
@@ -55,10 +54,9 @@ class NotificationService
                 }
             }
 
-            // --- failure check per‐channel, now inside the loop so $channel & $sent exist ---
             if (!$sent) {
                 throw new \Exception(
-                    "All providers failed for channel \"$channel\", will retry later",
+                    "All providers failed for channel \"$channel\". Last error: " . ($lastException ? $lastException->getMessage() : 'unknown'),
                     0,
                     $lastException
                 );
