@@ -120,7 +120,7 @@ class NotificationController extends AbstractController
      * Send a test email notification.
      *
      * Query parameters:
-     * - to: recipient email address, defaults to 'b4lbo123@gmail.com'.
+     * - to: recipient email address..
      *
      * @param Request $request
      * @return Response
@@ -128,7 +128,7 @@ class NotificationController extends AbstractController
     #[Route("/send-email", name: "send_email", methods: ["GET"])]
     public function sendEmail(Request $request): Response
     {
-        $toEmail = $request->query->get('to', 'b4lbo123@gmail.com');
+        $toEmail = $request->query->get('to', );
 
         if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
             return new Response('Invalid email address.', Response::HTTP_BAD_REQUEST);
@@ -164,7 +164,7 @@ class NotificationController extends AbstractController
      * Send a test SMS notification.
      *
      * Query parameters:
-     * - to: recipient phone number in E.164 format, defaults to '+37060635443' (My number).
+     * - to: recipient phone number in E.164 format.
      *
      * @param Request $request
      * @return Response

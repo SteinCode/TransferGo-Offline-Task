@@ -5,8 +5,9 @@ This simple project was made using [Dunglas Symfony Template](https://github.com
 ## Initial set up
 
 1. Run `docker compose build --pull --no-cache` to build fresh images.
-2. Run `docker compose up --wait` to set up.
-3. We recommend using Postman or other similar app or web to run requests.
+2. Copy the contents of `.env.dev` I sent you to `.env.dev`
+3. Run `docker compose up --wait` to set up.
+4. We recommend using Postman or other similar app or web to run requests.
 
 ## Endpoints
 
@@ -44,3 +45,11 @@ To access logs you will need to access running docker php container:
 -   Run `docker exec -it <container_id> bash`.
 -   To check general errors or debug logs, run `tail var/log/dev.log`.
 -   **For usage tracking I created a seperate log file, which can be accessed by running `tail var/log/dev_notifications.log`.**
+
+## Testing
+
+To run tests, you can use the following command:
+
+```bash
+composer unit-tests
+```
