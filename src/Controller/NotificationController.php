@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Messenger\NotificationMessage;
@@ -21,7 +24,7 @@ class NotificationController extends AbstractController
         $this->logger = $logger;
     }
 
-    #[Route('/test-notification', name: 'test_notification', methods: ['GET'])]
+    #[Route('/send-notification', name: 'test_notification', methods: ['GET'])]
     public function testNotification(Request $request): Response
     {
         $channelsParam = $request->query->get('channels', 'email');
@@ -62,7 +65,7 @@ class NotificationController extends AbstractController
     }
 
 
-    #[Route("/test-email", name: "test_email", methods: ["GET"])]
+    #[Route("/send-email", name: "test_email", methods: ["GET"])]
     public function testEmail(Request $request): Response
     {
         $toEmail = $request->query->get('to', 'b4lbo123@gmail.com');
@@ -74,7 +77,7 @@ class NotificationController extends AbstractController
             template: 'TEST_EMAIL',
             data: [],
             subject: 'Just testing',
-            body: 'Test email'
+            body: 'Test email.'
         );
 
         try {
@@ -92,7 +95,7 @@ class NotificationController extends AbstractController
         return new Response("Email sent to: $toEmail");
     }
 
-    #[Route("/test-sms", "test-sms", methods: ['GET'])]
+    #[Route("/send-sms", "test-sms", methods: ['GET'])]
     public function testSms(Request $request): Response
     {
         $toSms = $request->query->get('to', '+37060635443');
@@ -103,7 +106,7 @@ class NotificationController extends AbstractController
             data: [],
             template: 'TEST_SMS',
             subject: "",
-            body: 'Hello hello, how are you?'
+            body: 'Test SMS'
         );
         try {
             $this->bus->dispatch($message);
