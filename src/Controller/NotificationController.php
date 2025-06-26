@@ -18,6 +18,10 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class NotificationController extends AbstractController
 {
+    private const DEFAULT_SUBJECT = 'Hello!';
+    private const DEFAULT_BODY = '<p>This is a multi-channel test.</p>';
+    private const ALLOWED_CHANNELS = ['email', 'sms'];
+
     private MessageBusInterface $bus;
     private LoggerInterface $logger;
 
@@ -49,40 +53,68 @@ class NotificationController extends AbstractController
     #[Route('/send-notification', name: 'send_notification', methods: ['GET'])]
     public function sendNotification(Request $request): Response
     {
-        $channelsParam = $request->query->get('channels', 'email');
-        $channels = explode(',', $channelsParam);
+        // Parse channels
+        $requestedChannels = array_filter(
+            array_map('trim', explode(',', $request->query->get('channels', 'email')))
+        );
 
+        // Validate channels
+        $channels = array_intersect(self::ALLOWED_CHANNELS, $requestedChannels);
+        if (empty($channels)) {
+            return new Response(
+                sprintf('Invalid channel(s) specified. Allowed channels: %s', implode(', ', self::ALLOWED_CHANNELS)),
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        // Build recipients
         $to = [];
-        foreach ($channels as $ch) {
-            $paramKey = $ch === 'email' ? 'toEmail' : 'toSms';
-            if ($value = $request->query->get($paramKey)) {
-                $to[$ch] = $value;
+        foreach ($channels as $channel) {
+            switch ($channel) {
+                case 'email':
+                    $email = $request->query->get('toEmail');
+                    if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                        $to['email'] = $email;
+                    } else {
+                        return new Response('Invalid or missing email address.', Response::HTTP_BAD_REQUEST);
+                    }
+                    break;
+                case 'sms':
+                    $sms = $request->query->get('toSms');
+                    if ($sms && preg_match('/^\+?[1-9]\d{1,14}$/', $sms)) {
+                        $to['sms'] = $sms;
+                    } else {
+                        return new Response('Invalid or missing SMS number.', Response::HTTP_BAD_REQUEST);
+                    }
+                    break;
             }
         }
 
+        // Prepare message
         $message = new NotificationMessage(
             userId: 'demo-user',
             channels: $channels,
             to: $to,
             template: 'TEST_NOTIFICATION',
             data: [],
-            subject: $request->query->get('subject', 'Hello!'),
-            body: $request->query->get('body', '<p>This is a multi-channel test.</p>')
+            subject: $request->query->get('subject', self::DEFAULT_SUBJECT),
+            body: $request->query->get('body', self::DEFAULT_BODY)
         );
 
+        // Dispatch and handle errors
         try {
             $this->bus->dispatch($message);
+            $this->logger->info('Notification dispatched', ['channels' => $channels, 'to' => $to]);
         } catch (\Throwable $e) {
-            $this->logger->error('notification dispatch via multi-channel endpoint failed', [
-                'exception' => $e->getMessage(),
-            ]);
+            $this->logger->error('Notification dispatch failed', ['exception' => $e]);
+
             return new Response(
-                'Failed to send notification: ' . $e->getMessage(),
+                'Failed to send notification.',
                 Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
 
-        return new Response('Sent via: ' . implode(', ', $channels));
+        return new Response('Notification sent via: ' . implode(', ', $channels));
     }
 
     /**
@@ -101,6 +133,10 @@ class NotificationController extends AbstractController
     {
         $toEmail = $request->query->get('to', 'b4lbo123@gmail.com');
 
+        if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+            return new Response('Invalid email address.', Response::HTTP_BAD_REQUEST);
+        }
+
         $message = new NotificationMessage(
             userId: 'demo-user',
             channels: ['email'],
@@ -108,22 +144,22 @@ class NotificationController extends AbstractController
             template: 'TEST_EMAIL',
             data: [],
             subject: 'Just testing',
-            body: 'Test email.'
+            body: 'Test email'
         );
 
         try {
             $this->bus->dispatch($message);
+            $this->logger->info('Email dispatched', ['to' => $toEmail]);
         } catch (\Throwable $e) {
-            $this->logger->error('email dispatch failed', [
-                'exception' => $e->getMessage(),
-            ]);
+            $this->logger->error('Email dispatch failed', ['exception' => $e]);
+
             return new Response(
-                'Failed to send email: ' . $e->getMessage(),
+                'Failed to send email.',
                 Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
 
-        return new Response("Email sent to: $toEmail");
+        return new Response(sprintf('Email sent to: %s', $toEmail));
     }
 
     /**
@@ -140,26 +176,33 @@ class NotificationController extends AbstractController
     public function sendSms(Request $request): Response
     {
         $toSms = $request->query->get('to', '+37060635443');
+
+        if (!preg_match('/^\+?[1-9]\d{1,14}$/', $toSms)) {
+            return new Response('Invalid SMS number.', Response::HTTP_BAD_REQUEST);
+        }
+
         $message = new NotificationMessage(
             userId: 'demo-user',
             channels: ['sms'],
             to: ['sms' => $toSms],
-            data: [],
             template: 'TEST_SMS',
-            subject: "",
-            body: 'Test SMS'
+            data: [],
+            subject: '',
+            body: 'Hello hello, how are you?'
         );
+
         try {
             $this->bus->dispatch($message);
+            $this->logger->info('SMS dispatched', ['to' => $toSms]);
         } catch (\Throwable $e) {
-            $this->logger->error('SMS dispatch failed', [
-                'exception' => $e->getMessage(),
-            ]);
+            $this->logger->error('SMS dispatch failed', ['exception' => $e]);
+
             return new Response(
-                'Failed to send SMS: ' . $e->getMessage(),
+                'Failed to send SMS.',
                 Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
-        return new Response("SMS sent to: $toSms");
+
+        return new Response(sprintf('SMS sent to: %s', $toSms));
     }
 }
