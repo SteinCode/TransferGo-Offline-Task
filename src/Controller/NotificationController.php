@@ -57,7 +57,7 @@ class NotificationController extends AbstractController
             array_map('trim', explode(',', $request->query->get('channels', 'email')))
         );
 
-        $channels = array_intersect(self::ALLOWED_CHANNELS, $requestedChannels);
+        $channels = array_values(array_intersect($requestedChannels, self::ALLOWED_CHANNELS));
         if (empty($channels)) {
             return new Response(
                 sprintf('Invalid channel(s) specified. Allowed channels: %s', implode(', ', self::ALLOWED_CHANNELS)),

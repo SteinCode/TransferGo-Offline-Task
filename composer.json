@@ -99,6 +99,6 @@
         }
     },
     "require-dev": {
-        "phpunit/phpunit": "*"
+        "phpunit/phpunit": "^12.2"
     }
 }
