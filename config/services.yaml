@@ -44,7 +44,7 @@ services:
             $from: "%env(TWILIO_FROM)%"
             $logger: "@logger"
         tags:
-            - { name: "app.notifier.provider", priority: 100 }
+            - { name: "app.notifier.provider", priority: 70 }
 
     Aws\Sns\SnsClient:
         arguments:

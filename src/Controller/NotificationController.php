@@ -19,7 +19,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class NotificationController extends AbstractController
 {
     private const DEFAULT_SUBJECT = 'Hello!';
-    private const DEFAULT_BODY = '<p>This is a multi-channel test.</p>';
+    private const DEFAULT_BODY = 'This is a multi-channel test.';
     private const ALLOWED_CHANNELS = ['email', 'sms'];
 
     private MessageBusInterface $bus;
@@ -53,12 +53,10 @@ class NotificationController extends AbstractController
     #[Route('/send-notification', name: 'send_notification', methods: ['GET'])]
     public function sendNotification(Request $request): Response
     {
-        // Parse channels
         $requestedChannels = array_filter(
             array_map('trim', explode(',', $request->query->get('channels', 'email')))
         );
 
-        // Validate channels
         $channels = array_intersect(self::ALLOWED_CHANNELS, $requestedChannels);
         if (empty($channels)) {
             return new Response(
@@ -67,7 +65,6 @@ class NotificationController extends AbstractController
             );
         }
 
-        // Build recipients
         $to = [];
         foreach ($channels as $channel) {
             switch ($channel) {
@@ -80,7 +77,9 @@ class NotificationController extends AbstractController
                     }
                     break;
                 case 'sms':
-                    $sms = $request->query->get('toSms');
+                    // In HTTP query strings, '+' is decoded as space, so re-encode and trim
+                    $smsRaw = $request->query->get('toSms');
+                    $sms = str_replace(' ', '+', trim((string) $smsRaw));
                     if ($sms && preg_match('/^\+?[1-9]\d{1,14}$/', $sms)) {
                         $to['sms'] = $sms;
                     } else {
@@ -90,7 +89,6 @@ class NotificationController extends AbstractController
             }
         }
 
-        // Prepare message
         $message = new NotificationMessage(
             userId: 'demo-user',
             channels: $channels,
@@ -101,7 +99,6 @@ class NotificationController extends AbstractController
             body: $request->query->get('body', self::DEFAULT_BODY)
         );
 
-        // Dispatch and handle errors
         try {
             $this->bus->dispatch($message);
             $this->logger->info('Notification dispatched', ['channels' => $channels, 'to' => $to]);
@@ -175,16 +172,17 @@ class NotificationController extends AbstractController
     #[Route("/send-sms", "send_sms", methods: ['GET'])]
     public function sendSms(Request $request): Response
     {
-        $toSms = $request->query->get('to', '+37060635443');
+        $smsRaw = $request->query->get('to', '+37060635443');
+        $sms = str_replace(' ', '+', trim((string) $smsRaw));
 
-        if (!preg_match('/^\+?[1-9]\d{1,14}$/', $toSms)) {
+        if (!preg_match('/^\+?[1-9]\d{1,14}$/', $sms)) {
             return new Response('Invalid SMS number.', Response::HTTP_BAD_REQUEST);
         }
 
         $message = new NotificationMessage(
             userId: 'demo-user',
             channels: ['sms'],
-            to: ['sms' => $toSms],
+            to: ['sms' => $sms],
             template: 'TEST_SMS',
             data: [],
             subject: '',
@@ -193,7 +191,7 @@ class NotificationController extends AbstractController
 
         try {
             $this->bus->dispatch($message);
-            $this->logger->info('SMS dispatched', ['to' => $toSms]);
+            $this->logger->info('SMS dispatched', ['to' => $sms]);
         } catch (\Throwable $e) {
             $this->logger->error('SMS dispatch failed', ['exception' => $e]);
 
@@ -203,6 +201,6 @@ class NotificationController extends AbstractController
             );
         }
 
-        return new Response(sprintf('SMS sent to: %s', $toSms));
+        return new Response(sprintf('SMS sent to: %s', $sms));
     }
 }
