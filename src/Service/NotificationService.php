@@ -9,6 +9,7 @@ use App\Service\Provider\NotifierInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
+
 class NotificationService
 {
     /** @var iterable<NotifierInterface> */

@@ -9,23 +9,45 @@ use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
 
+/**
+ * Controller for testing notification dispatch via email and SMS channels.
+ * Provides endpoints to demonstrate and test the messaging flow.
+ */
 class NotificationController extends AbstractController
 {
     private MessageBusInterface $bus;
     private LoggerInterface $logger;
 
+    /**
+     * NotificationController constructor.
+     *
+     * @param MessageBusInterface $bus Message bus for dispatching messages
+     * @param LoggerInterface $logger Logger for recording events and errors
+     */
     public function __construct(MessageBusInterface $bus, LoggerInterface $logger)
     {
         $this->bus = $bus;
         $this->logger = $logger;
     }
 
-    #[Route('/send-notification', name: 'test_notification', methods: ['GET'])]
-    public function testNotification(Request $request): Response
+    /**
+     * Main endpoint to test notification via specified channels (email, sms).
+     *
+     * Query parameters:
+     * - channels: comma-separated channels ('email','sms'), defaults to 'email'.
+     * - toEmail: recipient email address for email channel.
+     * - toSms: recipient phone number for sms channel.
+     * - subject: notification subject, defaults to DEFAULT_SUBJECT.
+     * - body: notification body, defaults to DEFAULT_BODY.
+     *
+     * @param Request $request
+     * @return Response
+     */
+    #[Route('/send-notification', name: 'send_notification', methods: ['GET'])]
+    public function sendNotification(Request $request): Response
     {
         $channelsParam = $request->query->get('channels', 'email');
         $channels = explode(',', $channelsParam);
@@ -34,7 +56,6 @@ class NotificationController extends AbstractController
         foreach ($channels as $ch) {
             $paramKey = $ch === 'email' ? 'toEmail' : 'toSms';
             if ($value = $request->query->get($paramKey)) {
-                // for email: expect full address; for sms: expect phone number
                 $to[$ch] = $value;
             }
         }
@@ -64,9 +85,19 @@ class NotificationController extends AbstractController
         return new Response('Sent via: ' . implode(', ', $channels));
     }
 
-
-    #[Route("/send-email", name: "test_email", methods: ["GET"])]
-    public function testEmail(Request $request): Response
+    /**
+     * @deprecated this method was initially made for testing and learning purposes, use sendNotification() instead.
+     * 
+     * Send a test email notification.
+     *
+     * Query parameters:
+     * - to: recipient email address, defaults to 'b4lbo123@gmail.com'.
+     *
+     * @param Request $request
+     * @return Response
+     */
+    #[Route("/send-email", name: "send_email", methods: ["GET"])]
+    public function sendEmail(Request $request): Response
     {
         $toEmail = $request->query->get('to', 'b4lbo123@gmail.com');
 
@@ -95,8 +126,18 @@ class NotificationController extends AbstractController
         return new Response("Email sent to: $toEmail");
     }
 
-    #[Route("/send-sms", "test-sms", methods: ['GET'])]
-    public function testSms(Request $request): Response
+    /**
+     * @deprecated this method was initially made for testing and learning purposes, use sendNotification() instead.
+     * Send a test SMS notification.
+     *
+     * Query parameters:
+     * - to: recipient phone number in E.164 format, defaults to '+37060635443' (My number).
+     *
+     * @param Request $request
+     * @return Response
+     */
+    #[Route("/send-sms", "send_sms", methods: ['GET'])]
+    public function sendSms(Request $request): Response
     {
         $toSms = $request->query->get('to', '+37060635443');
         $message = new NotificationMessage(
