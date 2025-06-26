@@ -9,19 +9,58 @@ use App\Service\Provider\NotifierInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
-
+/**
+ * Service responsible for sending notifications to users via multiple channels and providers.
+ *
+ * This service iterates over all requested channels and attempts to send the notification using all
+ * available providers that support the channel. If all providers fail for a channel, an exception is thrown.
+ * Audit logs are written for successful sends, and errors are logged for failures.
+ */
 class NotificationService
 {
-    /** @var iterable<NotifierInterface> */
+    /**
+     * @var iterable<NotifierInterface> The notification providers available for sending messages.
+     */
+    private iterable $providers;
+
+    /**
+     * @var LoggerInterface Logger for general errors and failures.
+     */
+    private LoggerInterface $logger;
+
+    /**
+     * @var LoggerInterface Logger for notification audit events.
+     */
+    private LoggerInterface $notifierLogger;
+
+    /**
+     * NotificationService constructor.
+     *
+     * @param iterable<NotifierInterface> $providers The notification providers.
+     * @param LoggerInterface $logger Logger for errors.
+     * @param LoggerInterface $notifierLogger Logger for audit events.
+     */
     public function __construct(
-        private iterable $providers,
-        private LoggerInterface $logger,
+        iterable $providers,
+        LoggerInterface $logger,
         #[Autowire('%monolog.logger.notification%')]
-        private LoggerInterface $notifierLogger
+        LoggerInterface $notifierLogger
     ) {
+        $this->providers = $providers;
         $this->logger = $logger;
+        $this->notifierLogger = $notifierLogger;
     }
 
+    /**
+     * Sends a notification message to the user via all requested channels.
+     *
+     * For each channel, all providers that support it are tried in order. If all providers fail,
+     * an exception is thrown. Audit logs are written for successful sends, and errors are logged for failures.
+     *
+     * @param NotificationMessage $msg The notification message to send.
+     *
+     * @throws \Exception If all providers fail for any channel.
+     */
     public function notify(NotificationMessage $msg): void
     {
         $lastException = null;
@@ -56,12 +95,11 @@ class NotificationService
 
             if (!$sent) {
                 throw new \Exception(
-                    "All providers failed for channel \"$channel\". Last error: " . ($lastException ? $lastException->getMessage() : 'unknown'),
+                    "All providers failed, Last error: " . ($lastException ? $lastException->getMessage() : 'unknown'),
                     0,
                     $lastException
                 );
             }
         }
     }
-
 }
