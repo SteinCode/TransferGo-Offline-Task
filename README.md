@@ -1,51 +1,40 @@
-# Symfony Docker
+# TransferGo - Rokas Offline Task - Notification Service
 
-A [Docker](https://www.docker.com/)-based installer and runtime for the [Symfony](https://symfony.com) web framework,
-with [FrankenPHP](https://frankenphp.dev) and [Caddy](https://caddyserver.com/) inside!
+This simple project was made using [Dunglas Symfony Template](https://github.com/dunglas/symfony-docker).
 
-![CI](https://github.com/dunglas/symfony-docker/workflows/CI/badge.svg)
+## Initial set up
 
-## Getting Started
+0. When you will be testing this project, we assume that you have [Docker](https://www.docker.com/), [Docker Compose](https://docs.docker.com/compose/), PHP and Composer installed on your machine.
+1. First, run `docker-compose up --wait`.
 
-1. If not already done, [install Docker Compose](https://docs.docker.com/compose/install/) (v2.10+)
-2. Run `docker compose build --pull --no-cache` to build fresh images
-3. Run `docker compose up --wait` to set up and start a fresh Symfony project
-4. Open `https://localhost` in your favorite web browser and [accept the auto-generated TLS certificate](https://stackoverflow.com/a/15076602/1352334)
-5. Run `docker compose down --remove-orphans` to stop the Docker containers.
+## Working with env variables
 
-## Features
+In this project I used `.env.dev` file for managing all the environment variables.
 
-* Production, development and CI ready
-* Just 1 service by default
-* Blazing-fast performance thanks to [the worker mode of FrankenPHP](https://github.com/dunglas/frankenphp/blob/main/docs/worker.md) (automatically enabled in prod mode)
-* [Installation of extra Docker Compose services](docs/extra-services.md) with Symfony Flex
-* Automatic HTTPS (in dev and prod)
-* HTTP/3 and [Early Hints](https://symfony.com/blog/new-in-symfony-6-3-early-hints) support
-* Real-time messaging thanks to a built-in [Mercure hub](https://symfony.com/doc/current/mercure.html)
-* [Vulcain](https://vulcain.rocks) support
-* Native [XDebug](docs/xdebug.md) integration
-* Super-readable configuration
+## Capabilities
 
-**Enjoy!**
+-   Can send sms via two different channels (providers), if one of the channels is down, another will be used.
+-   Can send an email via one channel.
+-   Logs
+-   ...
 
-## Docs
+## Endpoints
 
-1. [Options available](docs/options.md)
-2. [Using Symfony Docker with an existing project](docs/existing-project.md)
-3. [Support for extra services](docs/extra-services.md)
-4. [Deploying in production](docs/production.md)
-5. [Debugging with Xdebug](docs/xdebug.md)
-6. [TLS Certificates](docs/tls.md)
-7. [Using MySQL instead of PostgreSQL](docs/mysql.md)
-8. [Using Alpine Linux instead of Debian](docs/alpine.md)
-9. [Using a Makefile](docs/makefile.md)
-10. [Updating the template](docs/updating.md)
-11. [Troubleshooting](docs/troubleshooting.md)
+### `GET test-notifications` - main endpoint for sending both: SMS and emails.
 
-## License
+## Tools used
 
-Symfony Docker is available under the MIT License.
+-   [AWS SES](https://aws.amazon.com/ses/) - for sending emails.
+-   [Twilio](https://www.twilio.com/en-us/messaging/channels/sms) - for sending SMS messages (as primary SMS provider).
+-   [AWS SNS](https://aws.amazon.com/sns/) - for sending SMS messages (as secondary SMS provider).
 
-## Credits
+## Logging
 
-Created by [Kévin Dunglas](https://dunglas.dev), co-maintained by [Maxime Helias](https://twitter.com/maxhelias) and sponsored by [Les-Tilleuls.coop](https://les-tilleuls.coop).
+For logging **usage tracking**, debug messages, errors, exceptions and etc. I used [Monolog](https://github.com/Seldaek/monolog).
+
+To access logs you will need to access running docker php container:
+
+-   First run `docker ps --no-trunc` and copy the container id or if useing docker desktop, navigate to php-1 container, and copy the id from there.
+-   Run `docker exec -it <container_id> bash`.
+-   To check general errors or debug logs, run `tail var/log/dev.log`.
+-   **For usage tracking I created a seperate log file, which can be accessed by running `tail var/log/dev_notifications.log`**
