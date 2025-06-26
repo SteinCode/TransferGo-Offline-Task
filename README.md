@@ -10,13 +10,17 @@ This simple project was made using [Dunglas Symfony Template](https://github.com
 
 ## Endpoints
 
-### `GET test-notifications` - main endpoint for sending both: SMS and emails.
+-   `GET send-notifications` - main endpoint for sending both: SMS and emails.
+-   `GET send-sms` - marked as deprecated, initially was used to test sms.
+-   `GET send-email` - marked as deprecated, initially was used to test emails.
 
 ## Working with env variables
 
 To sync env variables with the running container run custom composer command:
 
-`composer refresh-env`
+```bash
+composer refresh-env
+```
 
 ## Capabilities
 
@@ -36,7 +40,7 @@ For logging **usage tracking**, debug messages, errors, exceptions and etc. I us
 
 To access logs you will need to access running docker php container:
 
--   First run `docker ps --no-trunc` and copy the container id or if useing docker desktop, navigate to php-1 container, and copy the id from there.
+-   First run `docker ps --no-trunc` and copy the container id or if using docker desktop, navigate to php-1 container, and copy the id from there.
 -   Run `docker exec -it <container_id> bash`.
 -   To check general errors or debug logs, run `tail var/log/dev.log`.
--   **For usage tracking I created a seperate log file, which can be accessed by running `tail var/log/dev_notifications.log`**
+-   **For usage tracking I created a seperate log file, which can be accessed by running `tail var/log/dev_notifications.log`.**
