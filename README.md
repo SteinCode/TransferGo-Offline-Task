@@ -5,9 +5,9 @@ This simple project was made using [Dunglas Symfony Template](https://github.com
 ## Initial set up
 
 1. Run `docker compose build --pull --no-cache` to build fresh images.
-2. Copy the contents of `.env.dev` I sent you to `.env.dev`
+2. Change all credentials in `.env.dev` and run `composer refresh-env` to sync them with the running container.
 3. Run `docker compose up --wait` to set up.
-4. We recommend using Postman or other similar app or web to run requests.
+4. We recommend using Postman or other similar app to run requests.
 
 ## Endpoints
 
@@ -29,7 +29,7 @@ composer refresh-env
 -   Can send an email via one channel.
 -   Logs usage tracking to dev_notifications.log.
 
-## Tools used
+## External tools used
 
 -   [AWS SES](https://aws.amazon.com/ses/) - for sending emails.
 -   [Twilio](https://www.twilio.com/en-us/messaging/channels/sms) - for sending SMS messages (as primary SMS provider).
