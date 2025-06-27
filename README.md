@@ -11,9 +11,10 @@ git clone https://github.com/SteinCode/TransferGo-Offline-Task.git
 ```
 
 2. In this project for credential storage I am using `.env.dev`. Add your credentials in `.env.dev`.
-3. Run `docker compose build --pull --no-cache` to build fresh images.
-4. Run `docker compose up --wait` to set up.
-5. We recommend using Postman or other similar app to run requests.
+3. Run `composer refresh-env`.
+4. Run `docker compose build --pull --no-cache` to build fresh images.
+5. Run `docker compose up --wait` to set up.
+6. We recommend using Postman or other similar app to run requests.
 
 ## Endpoints
 
