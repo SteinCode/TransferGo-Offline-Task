@@ -4,14 +4,29 @@ This simple project was made using [Dunglas Symfony Template](https://github.com
 
 ## Initial set up
 
-1. Add your credentials in `.env.dev` and run `composer refresh-env` to sync them with the running container.
-2. Run `docker compose build --pull --no-cache` to build fresh images.
-3. Run `docker compose up --wait` to set up.
-4. We recommend using Postman or other similar app to run requests.
+1. Clone the repository
+
+```bash
+git clone https://github.com/SteinCode/TransferGo-Offline-Task.git
+```
+
+2. In this project for credential storage I am using `.env.dev`. Add your credentials in `.env.dev`.
+3. Run `docker compose build --pull --no-cache` to build fresh images.
+4. Run `docker compose up --wait` to set up.
+5. We recommend using Postman or other similar app to run requests.
 
 ## Endpoints
 
 -   `GET send-notifications` - main endpoint for sending both: SMS and emails.
+
+```JSON
+{
+    "channels": "email,sms",
+    "toEmail": "johnDoe@gmail.com",
+    "toSms": "+37061234567"
+}
+```
+
 -   `GET send-sms` - marked as deprecated, initially was used to test sms.
 -   `GET send-email` - marked as deprecated, initially was used to test emails.
 
