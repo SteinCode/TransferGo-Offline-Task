@@ -17,13 +17,15 @@ git clone https://github.com/SteinCode/TransferGo-Offline-Task.git
 
 ## Endpoints
 
--   `GET send-notifications` - main endpoint for sending both: SMS and emails.
+-   `GET send-notification` - main endpoint for sending both: SMS and emails.
 
 ```JSON
 {
     "channels": "email,sms",
     "toEmail": "johnDoe@gmail.com",
-    "toSms": "+37061234567"
+    "toSms": "+37061234567",
+    "subject": "test subject",
+    "message": "test message"
 }
 ```
 
@@ -40,9 +42,11 @@ composer refresh-env
 
 ## Capabilities
 
--   Can send sms via two different channels (providers), if one of the channels is down, another will be used.
+-   Can send sms via two different channels (providers). \
+-   if one of the SMS channels is down, another will be used.
 -   Can send an email via one channel.
 -   Logs usage tracking to dev_notifications.log.
+-   SMS providers can be configured by priority or enabled/disabled in `services.yaml`.
 
 ## External tools used
 
