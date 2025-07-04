@@ -9,12 +9,12 @@ This simple project was made using [Dunglas Symfony Template](https://github.com
 ```bash
 git clone https://github.com/SteinCode/TransferGo-Offline-Task.git
 ```
-
-2. In this project for credential storage I am using `.env.dev`. Add your credentials in `.env.dev`.
-3. Run `composer refresh-env`.
-4. Run `docker compose build --pull --no-cache` to build fresh images.
-5. Run `docker compose up --wait` to set up.
-6. We recommend using Postman or other similar app to run requests.
+2. run `composer install`
+3. In this project for credential storage I am using `.env.dev`. Add your credentials in `.env.dev`.
+4. Run `composer refresh-env`.
+5. Run `docker compose build --pull --no-cache` to build fresh images.
+6. Run `docker compose up --wait` to set up.
+7. We recommend using Postman or other similar app to run requests.
 
 ## Endpoints
 
