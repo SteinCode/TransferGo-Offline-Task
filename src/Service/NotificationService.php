@@ -82,7 +82,7 @@ class NotificationService
                         'sent_at' => (new \DateTimeImmutable())->format(\DateTime::ATOM),
                     ]);
                     $sent = true;
-                    // (don’t return—keep going so we try all channels)
+                    break;
                 } catch (\Throwable $e) {
                     $this->logger->error('Notifier failed', [
                         'channel' => $channel,
