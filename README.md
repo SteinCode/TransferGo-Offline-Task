@@ -26,7 +26,7 @@ git clone https://github.com/SteinCode/TransferGo-Offline-Task.git
     "toEmail": "johnDoe@gmail.com",
     "toSms": "+37061234567",
     "subject": "test subject",
-    "message": "test message"
+    "body": "test message"
 }
 ```
 
