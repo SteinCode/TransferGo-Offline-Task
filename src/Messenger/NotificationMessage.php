@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Messenger;
 
+use Symfony\Component\Messenger\Attribute\AsMessage;
+
 /**
  * Message object representing a notification to be sent to a user via one or more channels.
  *
@@ -12,6 +14,8 @@ namespace App\Messenger;
  *
  * @final
  */
+
+#[AsMessage('async')]
 final class NotificationMessage
 {
     /**

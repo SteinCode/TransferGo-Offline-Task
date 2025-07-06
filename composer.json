@@ -12,6 +12,7 @@
         "aws/aws-sdk-php": "^3.347",
         "doctrine/doctrine-bundle": "^2.15",
         "doctrine/doctrine-migrations-bundle": "^3.4",
+        "doctrine/migrations": "^3.9",
         "doctrine/orm": "^3.4",
         "runtime/frankenphp-symfony": "^0.2.0",
         "symfony/amazon-mailer": "7.3.*",
@@ -88,6 +89,9 @@
         ],
         "debug-env": [
             "php bin/console debug:dotenv"
+        ],
+        "run-worker": [
+            "php bin/console messenger:consume async -vv"
         ]
     },
     "conflict": {
@@ -101,6 +105,7 @@
         }
     },
     "require-dev": {
-        "phpunit/phpunit": "^12.2"
+        "phpunit/phpunit": "^12.2",
+        "symfony/maker-bundle": "^1.64"
     }
 }

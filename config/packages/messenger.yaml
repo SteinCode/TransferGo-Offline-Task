@@ -3,6 +3,5 @@ framework:
     transports:
       async:
         dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
-
-    routing:
-      'App\Messenger\NotificationMessage': async
+        options: 
+          auto_setup: true
