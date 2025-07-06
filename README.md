@@ -9,18 +9,39 @@ This simple project was made using [Dunglas Symfony Template](https://github.com
 ```bash
 git clone https://github.com/SteinCode/TransferGo-Offline-Task.git
 ```
-2. run `composer install`
-3. In this project for credential storage I am using `.env.dev`. Add your credentials in `.env.dev`.
-4. Run `composer refresh-env`.
-5. Run `docker compose build --pull --no-cache` to build fresh images.
-6. Run `docker compose up --wait` to set up.
-7. We recommend using Postman or other similar app to run requests.
+
+2. Install dependencies
+
+```bash
+composer install
+```
+
+3. In this project, credentials are stored in `.env.dev`. Add your credentials in `.env.dev`.
+4. Refresh environment variables
+
+```bash
+composer refresh-env
+```
+
+5. Build fresh Docker images
+
+```bash
+docker compose build --pull --no-cache
+```
+
+6. Start the services
+
+```bash
+docker compose up --wait
+```
+
+7. Use Postman or another HTTP client to make requests against the endpoints.
 
 ## Endpoints
 
--   `GET send-notification` - main endpoint for sending both: SMS and emails.
+- `GET /send-notification` - main endpoint for sending both SMS and emails.
 
-```JSON
+```json
 {
     "channels": "email,sms",
     "toEmail": "johnDoe@gmail.com",
@@ -30,12 +51,24 @@ git clone https://github.com/SteinCode/TransferGo-Offline-Task.git
 }
 ```
 
--   `GET send-sms` - marked as deprecated, initially was used to test sms.
--   `GET send-email` - marked as deprecated, initially was used to test emails.
+- `GET /send-sms` - **Deprecated**: initially used to test SMS.
+- `GET /send-email` - **Deprecated**: initially used to test emails.
+
+## Running the Worker
+
+Asynchronous messages are processed by running the Symfony Messenger consumer. Make sure to run a worker to handle queued messages:
+
+Start the worker inside the PHP container:
+
+```bash
+docker compose exec -t <php_container_id> bash
+
+bin/console messenger:consume async -vv
+```
 
 ## Working with env variables
 
-To sync env variables with the running container run custom composer command:
+To sync env variables with the running container, run:
 
 ```bash
 composer refresh-env
@@ -43,17 +76,18 @@ composer refresh-env
 
 ## Capabilities
 
--   Can send sms via two different channels (providers). \
--   if one of the SMS channels is down, another will be used.
--   Can send an email via one channel.
--   Logs usage tracking to dev_notifications.log.
--   SMS providers can be configured by priority or enabled/disabled in `services.yaml`.
+- Can send SMS via two different channels (providers).
+- If one SMS provider is down, the other will be used.
+- Can send an email via AWS SES.
+- Logs usage tracking to `var/log/dev_notifications.log`.
+- SMS providers can be configured by priority or enabled/disabled in `services.yaml`.
+- Sends messages asynchronously.
 
 ## External tools used
 
--   [AWS SES](https://aws.amazon.com/ses/) - for sending emails.
--   [Twilio](https://www.twilio.com/en-us/messaging/channels/sms) - for sending SMS messages (as primary SMS provider).
--   [AWS SNS](https://aws.amazon.com/sns/) - for sending SMS messages (as secondary SMS provider).
+- [AWS SES](https://aws.amazon.com/ses/) - for sending emails.
+- [Twilio](https://www.twilio.com/en-us/messaging/channels/sms) - for sending SMS messages (primary SMS provider).
+- [AWS SNS](https://aws.amazon.com/sns/) - for sending SMS messages (secondary SMS provider).
 
 ## Logging
 
@@ -61,15 +95,29 @@ For logging **usage tracking**, debug messages, errors, exceptions and etc. I us
 
 To access logs you will need to access running docker php container:
 
--   First run `docker ps --no-trunc` and copy the container id or if using docker desktop, navigate to php-1 container, and copy the id from there.
--   Run `docker exec -it <container_id> bash`.
--   To check general errors or debug logs, run `tail var/log/dev.log`.
--   **For usage tracking I created a seperate log file, which can be accessed by running `tail var/log/dev_notifications.log`.**
+Firstly run 
+```bash
+ docker ps --no-trunc 
+ ```
+ and copy the container id. Or if using docker desktop, navigate to php container, and copy the id from there.
+Next, run 
+```bash 
+docker exec -it <container_id> bash
+```
+To check general errors or debug logs, run:
+```bash
+tail var/log/dev.log
+```
+**For usage tracking I created a seperate log file, which can be accessed by running:**
+```bash 
+tail var/log/dev_notifications.log
+```
 
 ## Testing
 
-To run tests, you can use the following command:
+Run unit tests:
 
 ```bash
 composer unit-tests
 ```
+

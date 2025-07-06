@@ -15,7 +15,6 @@ use Symfony\Component\Messenger\Attribute\AsMessage;
  * @final
  */
 
-#[AsMessage('async')]
 final class NotificationMessage
 {
     /**
