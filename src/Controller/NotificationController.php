@@ -149,7 +149,6 @@ class NotificationController extends AbstractController
             userId: 'demo-user',
             channels: array_keys($to),
             to: $to,
-            template: 'TEST_NOTIFICATION',
             data: [],
             subject: $request->query->get('subject', self::DEFAULT_SUBJECT),
             body: $request->query->get('body', self::DEFAULT_BODY)
@@ -234,7 +233,6 @@ class NotificationController extends AbstractController
             userId: 'demo-user',
             channels: ['email'],
             to: ['email' => $toEmail],
-            template: 'TEST_EMAIL',
             data: [],
             subject: 'Just testing',
             body: 'Test email'
@@ -280,7 +278,6 @@ class NotificationController extends AbstractController
             userId: 'demo-user',
             channels: ['sms'],
             to: ['sms' => $sms],
-            template: 'TEST_SMS',
             data: [],
             subject: '',
             body: 'Hello hello, how are you?'
