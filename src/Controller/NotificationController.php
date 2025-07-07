@@ -57,32 +57,30 @@ class NotificationController extends AbstractController
 
         [$to, $errors] = $this->validateRecipients($request, $channels);
 
-
-        $message = new NotificationMessage(
-            userId: 'demo-user',
-            channels: $channels,
-            to: $to,
-            template: 'TEST_NOTIFICATION',
-            data: [],
-            subject: $request->query->get('subject', self::DEFAULT_SUBJECT),
-            body: $request->query->get('body', self::DEFAULT_BODY)
-        );
-
-        try {
-            $this->bus->dispatch($message);
-            $this->logger->info('Notification dispatched', ['channels' => $channels, 'to' => $to]);
-        } catch (\Throwable $e) {
-            $this->logger->error('Notification dispatch failed', ['exception' => $e]);
-
+        if (empty($to)) {
             return new Response(
-                'Failed to send notification.',
-                Response::HTTP_INTERNAL_SERVER_ERROR
+                'No valid channels. Errors: ' . implode('; ', $errors),
+                Response::HTTP_BAD_REQUEST
             );
         }
 
-        return new Response('Notification sent via: ' . implode(', ', $channels));
+        $message = $this->buildMessage($request, $to);
+
+        $this->dispatch($message, $to, $errors);
+
+        return $this->summaryResponse($to, $errors);
     }
 
+    /**
+     * Resolve and filter requested channels from the HTTP request.
+     *
+     * Reads the "channels" query parameter (comma-separated), trims each value,
+     * and returns only those that appear in the ALLOWED_CHANNELS constant.
+     *
+     * @param Request $request The current HTTP request.
+     *
+     * @return array
+     */
     private function resolveChannels(Request $request)
     {
         $requestedChannels = array_filter(
@@ -92,6 +90,18 @@ class NotificationController extends AbstractController
         return array_intersect($requestedChannels, self::ALLOWED_CHANNELS);
     }
 
+    /**
+     * Validate recipient addresses for each channel and collect errors.
+     *
+     * Iterates over the given channels, pulls the corresponding query parameter
+     * (toEmail or toSms), applies format validation, and builds a map of
+     * channel⇒address for those that passed. Any failures are recorded.
+     *
+     * @param Request $request  The current HTTP request.
+     * @param string[] $channels List of channels to validate (e.g. ['email','sms']).
+     *
+     * @return array()
+     */
     private function validateRecipients($request, $channels)
     {
         $to = [];
@@ -120,6 +130,84 @@ class NotificationController extends AbstractController
             }
         }
         return [$to, $errors];
+    }
+
+    /**
+     * Build the NotificationMessage for dispatching.
+     *
+     * Uses the validated recipients map and pulls subject/body overrides
+     * from the request (or falls back to defaults) to instantiate the message.
+     *
+     * @param Request $request The current HTTP request.
+     * @param array<string,string> $to Validated map of channel⇒address.
+     *
+     * @return NotificationMessage
+     */
+    private function buildMessage($request, $to)
+    {
+        return new NotificationMessage(
+            userId: 'demo-user',
+            channels: array_keys($to),
+            to: $to,
+            template: 'TEST_NOTIFICATION',
+            data: [],
+            subject: $request->query->get('subject', self::DEFAULT_SUBJECT),
+            body: $request->query->get('body', self::DEFAULT_BODY)
+        );
+    }
+
+    /**
+     * Dispatch the notification and log outcomes.
+     *
+     * Sends the given message via the Messenger bus, logs which channels were sent
+     * and which were skipped. Rethrows any exception encountered so that the
+     * controller can handle it.
+     *
+     * @param NotificationMessage  $msg The message to dispatch.
+     * @param array<string,string> $to Map of channels to addresses actually sent.
+     * @param string[] $errors Validation errors collected earlier.
+     *
+     * @throws \Throwable If dispatching fails.
+     */
+    private function dispatch(NotificationMessage $msg, array $to, array $errors): void
+    {
+        try {
+            $this->bus->dispatch($msg);
+            $this->logger->info('Notification dispatched', [
+                'sent'    => array_keys($to),
+                'skipped' => array_diff(self::ALLOWED_CHANNELS, array_keys($to)),
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('Dispatch failed', ['exception' => $e]);
+            // You might want to add an error here instead of returning immediately
+            throw $e;
+        }
+    }
+
+    /**
+     * Create an HTTP response summarizing sent channels and errors.
+     *
+     * Formats a human-readable message indicating which channels succeeded
+     * and any validation errors that occurred.
+     *
+     * @param array<string,string> $to Map of channels⇒addresses that were sent.
+     * @param string[] $errors List of validation error messages.
+     *
+     * @return Response The summary response to return to the client.
+     */
+    private function summaryResponse(array $to, array $errors): Response
+    {
+        $sent = array_keys($to);
+        $fullMessage = [];
+
+        if ($sent) {
+            $fullMessage[] = 'Sent via: ' . implode(', ', $sent);
+        }
+        if ($errors) {
+            $fullMessage[] = 'Errors: ' . implode('; ', $errors);
+        }
+
+        return new Response(implode('. ', $fullMessage));
     }
 
     /**
