@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Messenger;
 
+use Symfony\Component\Messenger\Attribute\AsMessage;
+
 /**
  * Message object representing a notification to be sent to a user via one or more channels.
  *
@@ -12,6 +14,7 @@ namespace App\Messenger;
  *
  * @final
  */
+
 final class NotificationMessage
 {
     /**
@@ -28,11 +31,6 @@ final class NotificationMessage
      * @var array<string,string> The recipient addresses per channel (e.g., ['sms' => '+123456789', 'email' => 'user@example.com']).
      */
     private array $to;
-
-    /**
-     * @var string The template identifier for the notification content.
-     */
-    private string $template;
 
     /**
      * @var array<string,mixed> The data to be injected into the template.
@@ -55,7 +53,6 @@ final class NotificationMessage
      * @param string $userId   The user identifier.
      * @param string[] $channels   The channels to use for notification delivery.
      * @param array<string,string> $to   The recipient addresses per channel.
-     * @param string $template   The template identifier.
      * @param array<string,mixed> $data   The data for the template.
      * @param string|null $subject   The notification subject (optional).
      * @param string|null $body      The notification body (optional).
@@ -64,7 +61,7 @@ final class NotificationMessage
         string $userId,
         array $channels,
         array $to,
-        string $template,
+
         array $data,
         ?string $subject = null,
         ?string $body = null
@@ -72,7 +69,6 @@ final class NotificationMessage
         $this->userId = $userId;
         $this->channels = $channels;
         $this->to = $to;
-        $this->template = $template;
         $this->data = $data;
         $this->subject = $subject;
         $this->body = $body;
@@ -108,15 +104,6 @@ final class NotificationMessage
         return $this->to;
     }
 
-    /**
-     * Gets the template identifier.
-     *
-     * @return string
-     */
-    public function getTemplate(): string
-    {
-        return $this->template;
-    }
 
     /**
      * Gets the data for the template.

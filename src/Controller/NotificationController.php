@@ -53,19 +53,70 @@ class NotificationController extends AbstractController
     #[Route('/send-notification', name: 'send_notification', methods: ['GET'])]
     public function sendNotification(Request $request): Response
     {
-        $requestedChannels = array_filter(
-            array_map('trim', explode(',', $request->query->get('channels', 'email')))
-        );
+        $channels = $this->resolveChannels($request);
 
-        $channels = array_values(array_intersect($requestedChannels, self::ALLOWED_CHANNELS));
+        [$to, $errors] = $this->validateRecipients($request, $channels);
+
         if (empty($channels)) {
             return new Response(
-                sprintf('Invalid channel(s) specified. Allowed channels: %s', implode(', ', self::ALLOWED_CHANNELS)),
+                sprintf(
+                    'Invalid channel(s) specified. Allowed channels: %s',
+                    implode(', ', self::ALLOWED_CHANNELS)
+                ),
                 Response::HTTP_BAD_REQUEST
             );
         }
 
+        if (empty($to)) {
+            return new Response(
+                'No valid channels. Errors: ' . implode('; ', $errors),
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $message = $this->buildMessage($request, $to);
+
+        $this->dispatch($message, $to, $errors);
+
+        return $this->summaryResponse($to, $errors);
+    }
+
+    /**
+     * Resolve and filter requested channels from the HTTP request.
+     *
+     * Reads the "channels" query parameter (comma-separated), trims each value,
+     * and returns only those that appear in the ALLOWED_CHANNELS constant.
+     *
+     * @param Request $request The current HTTP request.
+     *
+     * @return array
+     */
+    private function resolveChannels(Request $request)
+    {
+        $requestedChannels = array_filter(
+            array_map('trim', explode(',', $request->query->get('channels', 'email')))
+        );
+
+        return array_intersect($requestedChannels, self::ALLOWED_CHANNELS);
+    }
+
+    /**
+     * Validate recipient addresses for each channel and collect errors.
+     *
+     * Iterates over the given channels, pulls the corresponding query parameter
+     * (toEmail or toSms), applies format validation, and builds a map of
+     * channel⇒address for those that passed. Any failures are recorded.
+     *
+     * @param Request $request  The current HTTP request.
+     * @param string[] $channels List of channels to validate (e.g. ['email','sms']).
+     *
+     * @return array()
+     */
+    private function validateRecipients($request, $channels)
+    {
         $to = [];
+        $errors = [];
+
         foreach ($channels as $channel) {
             switch ($channel) {
                 case 'email':
@@ -73,7 +124,7 @@ class NotificationController extends AbstractController
                     if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
                         $to['email'] = $email;
                     } else {
-                        return new Response('Invalid or missing email address.', Response::HTTP_BAD_REQUEST);
+                        $errors[] = 'Email invalid or missing.';
                     }
                     break;
                 case 'sms':
@@ -81,37 +132,92 @@ class NotificationController extends AbstractController
                     $digits = preg_replace('/\D+/', '', $smsRaw);
                     $sms = '+' . $digits;
 
-                    if (!preg_match('/^\+[1-9]\d{1,14}$/', $sms)) {
-                        return new Response('Invalid or missing SMS number.', Response::HTTP_BAD_REQUEST);
+                    if (preg_match('/^\+[1-9]\d{1,14}$/', $sms)) {
+                        $to['sms'] = $sms;
+                    } else {
+                        $errors[] = "SMS invalid or missing";
                     }
-                    $to['sms'] = $sms;
-                    break;
             }
         }
+        return [$to, $errors];
+    }
 
-        $message = new NotificationMessage(
+    /**
+     * Build the NotificationMessage for dispatching.
+     *
+     * Uses the validated recipients map and pulls subject/body overrides
+     * from the request (or falls back to defaults) to instantiate the message.
+     *
+     * @param Request $request The current HTTP request.
+     * @param array<string,string> $to Validated map of channel⇒address.
+     *
+     * @return NotificationMessage
+     */
+    private function buildMessage($request, $to)
+    {
+        return new NotificationMessage(
             userId: 'demo-user',
-            channels: $channels,
+            channels: array_keys($to),
             to: $to,
-            template: 'TEST_NOTIFICATION',
             data: [],
             subject: $request->query->get('subject', self::DEFAULT_SUBJECT),
             body: $request->query->get('body', self::DEFAULT_BODY)
         );
+    }
 
+    /**
+     * Dispatch the notification and log outcomes.
+     *
+     * Sends the given message via the Messenger bus, logs which channels were sent
+     * and which were skipped. Rethrows any exception encountered so that the
+     * controller can handle it.
+     *
+     * @param NotificationMessage  $msg The message to dispatch.
+     * @param array<string,string> $to Map of channels to addresses actually sent.
+     * @param string[] $errors Validation errors collected earlier.
+     *
+     * @throws \Throwable If dispatching fails.
+     */
+    private function dispatch(NotificationMessage $msg, array $to, array $errors): void
+    {
         try {
-            $this->bus->dispatch($message);
-            $this->logger->info('Notification dispatched', ['channels' => $channels, 'to' => $to]);
+            $this->bus->dispatch($msg);
+            $this->logger->info('Notification dispatched', [
+                'sent'    => array_keys($to),
+                'skipped' => array_values(
+                    array_diff(self::ALLOWED_CHANNELS, array_keys($to))
+                ),
+            ]);
         } catch (\Throwable $e) {
-            $this->logger->error('Notification dispatch failed', ['exception' => $e]);
+            $this->logger->error('Dispatch failed', ['exception' => $e]);
+            throw $e;
+        }
+    }
 
-            return new Response(
-                'Failed to send notification.',
-                Response::HTTP_INTERNAL_SERVER_ERROR
-            );
+    /**
+     * Create an HTTP response summarizing sent channels and errors.
+     *
+     * Formats a human-readable message indicating which channels succeeded
+     * and any validation errors that occurred.
+     *
+     * @param array<string,string> $to Map of channels⇒addresses that were sent.
+     * @param string[] $errors List of validation error messages.
+     *
+     * @return Response The summary response to return to the client.
+     */
+    private function summaryResponse(array $to, array $errors): Response
+    {
+        $sent = array_keys($to);
+        $fullMessage = [];
+
+        if ($sent) {
+            $fullMessage[] = 'Sent via: ' . implode(', ', $sent);
+        }
+        if ($errors) {
+            $fullMessage[] = 'Errors: ' . implode('; ', $errors);
         }
 
-        return new Response('Notification sent via: ' . implode(', ', $channels));
+        return new Response(implode('. ', $fullMessage));
     }
 
     /**
@@ -128,7 +234,7 @@ class NotificationController extends AbstractController
     #[Route("/send-email", name: "send_email", methods: ["GET"])]
     public function sendEmail(Request $request): Response
     {
-        $toEmail = $request->query->get('to', );
+        $toEmail = $request->query->get('to',);
 
         if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
             return new Response('Invalid email address.', Response::HTTP_BAD_REQUEST);
@@ -138,7 +244,6 @@ class NotificationController extends AbstractController
             userId: 'demo-user',
             channels: ['email'],
             to: ['email' => $toEmail],
-            template: 'TEST_EMAIL',
             data: [],
             subject: 'Just testing',
             body: 'Test email'
@@ -184,7 +289,6 @@ class NotificationController extends AbstractController
             userId: 'demo-user',
             channels: ['sms'],
             to: ['sms' => $sms],
-            template: 'TEST_SMS',
             data: [],
             subject: '',
             body: 'Hello hello, how are you?'
