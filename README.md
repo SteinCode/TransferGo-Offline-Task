@@ -61,7 +61,7 @@ Asynchronous messages are processed by running the Symfony Messenger consumer. M
 Start the worker inside the PHP container:
 
 ```bash
-docker compose exec -t <php_container_id> bash
+docker compose exec -it <php_container_id> bash
 
 bin/console messenger:consume async -vv
 ```
