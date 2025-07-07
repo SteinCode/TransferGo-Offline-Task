@@ -54,36 +54,9 @@ class NotificationController extends AbstractController
     public function sendNotification(Request $request): Response
     {
         $channels = $this->resolveChannels($request);
-        if (empty($channels)) {
-            return new Response(
-                sprintf('Invalid channel(s) specified. Allowed channels: %s', implode(', ', self::ALLOWED_CHANNELS)),
-                Response::HTTP_BAD_REQUEST
-            );
-        }
 
-        $to = [];
-        foreach ($channels as $channel) {
-            switch ($channel) {
-                case 'email':
-                    $email = $request->query->get('toEmail');
-                    if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                        $to['email'] = $email;
-                    } else {
-                        return new Response('Invalid or missing email address.', Response::HTTP_BAD_REQUEST);
-                    }
-                    break;
-                case 'sms':
-                    $smsRaw = (string) $request->query->get('toSms', '');
-                    $digits = preg_replace('/\D+/', '', $smsRaw);
-                    $sms = '+' . $digits;
+        [$to, $errors] = $this->validateRecipients($request, $channels);
 
-                    if (!preg_match('/^\+[1-9]\d{1,14}$/', $sms)) {
-                        return new Response('Invalid or missing SMS number.', Response::HTTP_BAD_REQUEST);
-                    }
-                    $to['sms'] = $sms;
-                    break;
-            }
-        }
 
         $message = new NotificationMessage(
             userId: 'demo-user',
@@ -110,12 +83,43 @@ class NotificationController extends AbstractController
         return new Response('Notification sent via: ' . implode(', ', $channels));
     }
 
-    private function resolveChannels(Request $request){
+    private function resolveChannels(Request $request)
+    {
         $requestedChannels = array_filter(
-        array_map('trim', explode(',', $request->query->get('channels', 'email')))
+            array_map('trim', explode(',', $request->query->get('channels', 'email')))
         );
 
         return array_intersect($requestedChannels, self::ALLOWED_CHANNELS);
+    }
+
+    private function validateRecipients($request, $channels)
+    {
+        $to = [];
+        $errors = [];
+
+        foreach ($channels as $channel) {
+            switch ($channel) {
+                case 'email':
+                    $email = $request->query->get('toEmail');
+                    if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                        $to['email'] = $email;
+                    } else {
+                        $errors[] = 'Email invalid or missing.';
+                    }
+                    break;
+                case 'sms':
+                    $smsRaw = (string) $request->query->get('toSms', '');
+                    $digits = preg_replace('/\D+/', '', $smsRaw);
+                    $sms = '+' . $digits;
+
+                    if (preg_match('/^\+[1-9]\d{1,14}$/', $sms)) {
+                        $to['sms'] = $sms;
+                    } else {
+                        $errors[] = "SMS invalid or missing";
+                    }
+            }
+        }
+        return [$to, $errors];
     }
 
     /**
@@ -132,7 +136,7 @@ class NotificationController extends AbstractController
     #[Route("/send-email", name: "send_email", methods: ["GET"])]
     public function sendEmail(Request $request): Response
     {
-        $toEmail = $request->query->get('to', );
+        $toEmail = $request->query->get('to',);
 
         if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
             return new Response('Invalid email address.', Response::HTTP_BAD_REQUEST);
