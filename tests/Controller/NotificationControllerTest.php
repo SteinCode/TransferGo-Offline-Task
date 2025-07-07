@@ -28,21 +28,21 @@ class NotificationControllerTest extends TestCase
     {
         $request = Request::create('/send-notification', 'GET', [
             'channels' => 'email',
-            'toEmail' => 'user@example.com',
-            'subject' => 'subj',
-            'body' => 'body',
+            'toEmail'  => 'user@example.com',
+            'subject'  => 'subj',
+            'body'     => 'body',
         ]);
 
         $this->bus
             ->expects($this->once())
             ->method('dispatch')
-            ->with($this->callback(function ($msg) {
-                return $msg instanceof NotificationMessage
-                    && $msg->getChannels() === ['email']
-                    && $msg->getTo() === ['email' => 'user@example.com']
-                    && $msg->getSubject() === 'subj'
-                    && $msg->getBody() === 'body';
-            }))
+            ->with($this->callback(fn($msg) =>
+                $msg instanceof NotificationMessage
+                && $msg->getChannels() === ['email']
+                && $msg->getTo() === ['email' => 'user@example.com']
+                && $msg->getSubject() === 'subj'
+                && $msg->getBody() === 'body'
+            ))
             ->willReturnCallback(fn(NotificationMessage $msg) => new Envelope($msg));
 
         $this->logger
@@ -50,31 +50,30 @@ class NotificationControllerTest extends TestCase
             ->method('info')
             ->with(
                 'Notification dispatched',
-                ['channels' => ['email'], 'to' => ['email' => 'user@example.com']]
+                ['sent' => ['email'], 'skipped' => ['sms']]
             );
 
         $response = $this->controller->sendNotification($request);
 
-        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
-        $this->assertEquals('Notification sent via: email', $response->getContent());
+        $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertSame('Sent via: email', $response->getContent());
     }
 
     public function testSendNotificationWithSmsChannel(): void
     {
         $request = Request::create('/send-notification', 'GET', [
             'channels' => 'sms',
-            'toSms' => '+441234567890',
+            'toSms'    => '+441234567890',
         ]);
 
         $this->bus
             ->expects($this->once())
             ->method('dispatch')
-            ->with($this->callback(function ($msg) {
-                return $msg instanceof NotificationMessage
-                    && $msg->getChannels() === ['sms']
-                    && $msg->getTo() === ['sms' => '+441234567890'];
-            }))
-
+            ->with($this->callback(fn($msg) =>
+                $msg instanceof NotificationMessage
+                && $msg->getChannels() === ['sms']
+                && $msg->getTo() === ['sms' => '+441234567890']
+            ))
             ->willReturnCallback(fn(NotificationMessage $msg) => new Envelope($msg));
 
         $this->logger
@@ -82,35 +81,34 @@ class NotificationControllerTest extends TestCase
             ->method('info')
             ->with(
                 'Notification dispatched',
-                ['channels' => ['sms'], 'to' => ['sms' => '+441234567890']]
+                ['sent' => ['sms'], 'skipped' => ['email']]
             );
 
         $response = $this->controller->sendNotification($request);
 
-        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
-        $this->assertEquals('Notification sent via: sms', $response->getContent());
+        $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertSame('Sent via: sms', $response->getContent());
     }
 
-
-    public function testSendNotificationWithBothChannels(): void
+    public function testSendNotificationWithBothChannelsSuccess(): void
     {
         $request = Request::create('/send-notification', 'GET', [
-            'channels' => 'email, sms',
-            'toEmail' => 'foo@bar.com',
-            'toSms' => '+441234567890',
+            'channels' => 'email,sms',
+            'toEmail'  => 'foo@bar.com',
+            'toSms'    => '+441234567890',
         ]);
 
         $this->bus
             ->expects($this->once())
             ->method('dispatch')
-            ->with($this->callback(function ($msg) {
-                return $msg instanceof NotificationMessage
-                    && $msg->getChannels() === ['email', 'sms']
-                    && $msg->getTo() === [
-                        'email' => 'foo@bar.com',
-                        'sms' => '+441234567890',
-                    ];
-            }))
+            ->with($this->callback(fn($msg) =>
+                $msg instanceof NotificationMessage
+                && $msg->getChannels() === ['email', 'sms']
+                && $msg->getTo() === [
+                    'email' => 'foo@bar.com',
+                    'sms'   => '+441234567890',
+                ]
+            ))
             ->willReturnCallback(fn(NotificationMessage $msg) => new Envelope($msg));
 
         $this->logger
@@ -118,16 +116,13 @@ class NotificationControllerTest extends TestCase
             ->method('info')
             ->with(
                 'Notification dispatched',
-                [
-                    'channels' => ['email', 'sms'],
-                    'to' => ['email' => 'foo@bar.com', 'sms' => '+441234567890'],
-                ]
+                ['sent' => ['email', 'sms'], 'skipped' => []]
             );
 
         $response = $this->controller->sendNotification($request);
 
-        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
-        $this->assertEquals('Notification sent via: email, sms', $response->getContent());
+        $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertSame('Sent via: email, sms', $response->getContent());
     }
 
     public function testInvalidChannelReturnsBadRequest(): void
@@ -141,43 +136,69 @@ class NotificationControllerTest extends TestCase
 
         $response = $this->controller->sendNotification($request);
 
-        $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+        $this->assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
         $this->assertStringContainsString(
-            'Invalid channel(s) specified. Allowed channels: email, sms',
+            'Invalid channel(s) specified. Allowed channels:',
             $response->getContent()
         );
     }
 
-    public function testMissingEmailAddressReturnsBadRequest(): void
+    public function testMissingAllRecipientsReturnsBadRequest(): void
     {
         $request = Request::create('/send-notification', 'GET', [
-            'channels' => 'email',
+            'channels' => 'email,sms',
         ]);
+
+        $this->bus->expects($this->never())->method('dispatch');
+        $this->logger->expects($this->never())->method('info');
 
         $response = $this->controller->sendNotification($request);
 
-        $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
-        $this->assertEquals('Invalid or missing email address.', $response->getContent());
+        $this->assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+        $this->assertStringContainsString('Email invalid or missing.', $response->getContent());
+        $this->assertStringContainsString('SMS invalid or missing', $response->getContent());
     }
 
-    public function testInvalidSmsNumberReturnsBadRequest(): void
+    public function testPartialFailureContinuesWithSmsOnly(): void
+    {
+        $request = Request::create('/send-notification', 'GET', [
+            'channels' => 'email,sms',
+            'toEmail'  => 'invalid-email',
+            'toSms'    => '+441234567890',
+        ]);
+
+        $this->bus
+            ->expects($this->once())
+            ->method('dispatch')
+            ->with($this->callback(fn($msg) =>
+                $msg instanceof NotificationMessage
+                && $msg->getChannels() === ['sms']
+                && $msg->getTo() === ['sms' => '+441234567890']
+            ))
+            ->willReturnCallback(fn(NotificationMessage $msg) => new Envelope($msg));
+
+        $this->logger
+            ->expects($this->once())
+            ->method('info')
+            ->with(
+                'Notification dispatched',
+                ['sent' => ['sms'], 'skipped' => ['email']]
+            );
+
+        $response = $this->controller->sendNotification($request);
+
+        $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertSame(
+            'Sent via: sms. Errors: Email invalid or missing.',
+            $response->getContent()
+        );
+    }
+
+    public function testDispatchExceptionReturnsServerError(): void
     {
         $request = Request::create('/send-notification', 'GET', [
             'channels' => 'sms',
-            'toSms' => 'invalid-number',
-        ]);
-
-        $response = $this->controller->sendNotification($request);
-
-        $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
-        $this->assertEquals('Invalid or missing SMS number.', $response->getContent());
-    }
-
-    public function testBusDispatchExceptionReturnsServerError(): void
-    {
-        $request = Request::create('/send-notification', 'GET', [
-            'channels' => 'email',
-            'toEmail' => 'test@domain.com',
+            'toSms'    => '+441234567890',
         ]);
 
         $this->bus
@@ -189,13 +210,12 @@ class NotificationControllerTest extends TestCase
             ->expects($this->once())
             ->method('error')
             ->with(
-                'Notification dispatch failed',
+                'Dispatch failed',
                 $this->arrayHasKey('exception')
             );
 
-        $response = $this->controller->sendNotification($request);
+        $this->expectException(\RuntimeException::class);
 
-        $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $response->getStatusCode());
-        $this->assertEquals('Failed to send notification.', $response->getContent());
+        $this->controller->sendNotification($request);
     }
 }

@@ -57,6 +57,16 @@ class NotificationController extends AbstractController
 
         [$to, $errors] = $this->validateRecipients($request, $channels);
 
+        if (empty($channels)) {
+            return new Response(
+                sprintf(
+                    'Invalid channel(s) specified. Allowed channels: %s',
+                    implode(', ', self::ALLOWED_CHANNELS)
+                ),
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
         if (empty($to)) {
             return new Response(
                 'No valid channels. Errors: ' . implode('; ', $errors),
@@ -174,7 +184,9 @@ class NotificationController extends AbstractController
             $this->bus->dispatch($msg);
             $this->logger->info('Notification dispatched', [
                 'sent'    => array_keys($to),
-                'skipped' => array_diff(self::ALLOWED_CHANNELS, array_keys($to)),
+                'skipped' => array_values(
+                    array_diff(self::ALLOWED_CHANNELS, array_keys($to))
+                ),
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('Dispatch failed', ['exception' => $e]);
