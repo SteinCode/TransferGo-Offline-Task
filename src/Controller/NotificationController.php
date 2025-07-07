@@ -178,7 +178,6 @@ class NotificationController extends AbstractController
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('Dispatch failed', ['exception' => $e]);
-            // You might want to add an error here instead of returning immediately
             throw $e;
         }
     }
