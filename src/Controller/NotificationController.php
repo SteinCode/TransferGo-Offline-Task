@@ -53,11 +53,7 @@ class NotificationController extends AbstractController
     #[Route('/send-notification', name: 'send_notification', methods: ['GET'])]
     public function sendNotification(Request $request): Response
     {
-        $requestedChannels = array_filter(
-            array_map('trim', explode(',', $request->query->get('channels', 'email')))
-        );
-
-        $channels = array_values(array_intersect($requestedChannels, self::ALLOWED_CHANNELS));
+        $channels = $this->resolveChannels($request);
         if (empty($channels)) {
             return new Response(
                 sprintf('Invalid channel(s) specified. Allowed channels: %s', implode(', ', self::ALLOWED_CHANNELS)),
@@ -112,6 +108,14 @@ class NotificationController extends AbstractController
         }
 
         return new Response('Notification sent via: ' . implode(', ', $channels));
+    }
+
+    private function resolveChannels(Request $request){
+        $requestedChannels = array_filter(
+        array_map('trim', explode(',', $request->query->get('channels', 'email')))
+        );
+
+        return array_intersect($requestedChannels, self::ALLOWED_CHANNELS);
     }
 
     /**
